@@ -23,10 +23,6 @@
 
 (require 'cl-lib)
 
-(defun spacemacs//run-local-vars-mode-hook ()
-  "Run a hook for the major-mode after the local variables have been processed."
-  (run-hooks (intern (format "%S-local-vars-hook" major-mode))))
-
 (defun spacemacs/split-and-new-line ()
   "Split a quoted string or s-expression and insert a new line with
 auto-indent."

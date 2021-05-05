@@ -35,6 +35,7 @@
 (require 'core-debug)
 (require 'core-command-line)
 (require 'core-configuration-layer)
+(require 'core-local-variables)
 (require 'core-dotspacemacs)
 (require 'core-custom-settings)
 (require 'core-release-management)
