@@ -21,18 +21,8 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 
-(defun spacemacs//poetry-activate ()
-  "Attempt to activate Poetry only if its configuration file is found."
-  (let ((root-path (locate-dominating-file default-directory "pyproject.toml")))
-    (when root-path
-      (message "Poetry configuration file found. Activating virtual environment.")
-      (poetry-venv-workon))))
-
-
 (defun spacemacs//python-setup-backend ()
   "Conditionally setup python backend."
-  (when python-pipenv-activate (pipenv-activate))
-  (when python-poetry-activate (spacemacs//poetry-activate))
   (pcase python-backend
     ('anaconda (spacemacs//python-setup-anaconda))
     ('lsp (spacemacs//python-setup-lsp))))
@@ -53,6 +43,13 @@
   (when (eq python-backend 'anaconda)
     ;; lsp setup eldoc on its own
     (spacemacs//python-setup-anaconda-eldoc)))
+
+(defun spacemacs//python-setup-version-manager ()
+  "Conditionally setup the environment manager."
+  (pcase python-version-manager
+    ('pyenv-pyvenv (spacemacs//python-setup-pyenv-pyvenv))
+    ('pipenv (spacemacs//python-setup-pipenv))
+    ('poetry (spacemacs//python-setup-poetry))))
 
 
 ;; anaconda
@@ -100,6 +97,92 @@
 (defun spacemacs//python-setup-lsp-dap ()
   "Setup DAP integration."
   (require 'dap-python))
+
+
+;; pyenv and pyvenv
+
+(defun spacemacs//python-setup-pyenv-pyvenv ()
+  "Setup pyenv and pyvenv version manager."
+    (pyenv-mode)
+    (pyvenv-mode))
+
+(defun spacemacs//python-setup-pyenv-hook ()
+  "Function called to setup `pyenv-mode' when it's enabled."
+  (spacemacs//pyenv-mode-set-local-version))
+
+(defun spacemacs//python-setup-pyvenv-hook ()
+  "Function called to setup `pyvenv-mode' when it's enabled."
+  (spacemacs//pyvenv-mode-set-local-virtualenv))
+
+(defun spacemacs//pyenv-mode-set-local-version ()
+  "Set pyenv version from \".python-version\" by looking in parent directories."
+  (interactive)
+  (let ((root-path (locate-dominating-file default-directory
+                                           ".python-version")))
+    (when root-path
+      (let* ((file-path (expand-file-name ".python-version" root-path))
+             (version
+              (with-temp-buffer
+                (insert-file-contents-literally file-path)
+                (nth 0 (split-string (buffer-substring-no-properties
+                                      (line-beginning-position)
+                                      (line-end-position)))))))
+        (if (member version (pyenv-mode-versions))
+            (progn
+              (setenv "VIRTUAL_ENV" version)
+              (pyenv-mode-set version))
+          (message "pyenv: version `%s' is not installed (set by %s)"
+                   version file-path))))))
+
+(defun spacemacs//pyvenv-mode-set-local-virtualenv ()
+  "Set pyvenv virtualenv from \".venv\" by looking in parent directories.
+Handle \".venv\" being a virtualenv directory or a file specifying either
+absolute or relative virtualenv path. Relative path is checked relative to
+location of \".venv\" file, then relative to pyvenv-workon-home()."
+  (interactive)
+  (let ((root-path (locate-dominating-file default-directory ".venv")))
+    (when root-path
+      (let ((file-path (expand-file-name ".venv" root-path)))
+        (cond ((file-directory-p file-path)
+               (pyvenv-activate file-path) (setq-local pyvenv-activate file-path))
+              (t (let* ((virtualenv-path-in-file
+                         (with-temp-buffer
+                           (insert-file-contents-literally file-path)
+                           (buffer-substring-no-properties (line-beginning-position)
+                                                           (line-end-position))))
+                        (virtualenv-abs-path
+                         (if (file-name-absolute-p virtualenv-path-in-file)
+                             virtualenv-path-in-file
+                           (format "%s/%s" root-path virtualenv-path-in-file))))
+                   (cond ((file-directory-p virtualenv-abs-path)
+                          (pyvenv-activate virtualenv-abs-path)
+                          (setq-local pyvenv-activate virtualenv-abs-path))
+                         (t (pyvenv-workon virtualenv-path-in-file)
+                            (setq-local pyvenv-workon virtualenv-path-in-file))))))))))
+
+
+;; pipenv
+
+(defun spacemacs//python-setup-pipenv ()
+  "Setup pipenv version manager."
+  (pipenv-activate)
+  )
+
+
+;; poetry
+
+(defun spacemacs//python-setup-poetry ()
+  "Setup poetry version manager."
+  (spacemacs//poetry-activate)
+  )
+
+(defun spacemacs//poetry-activate ()
+  "Attempt to activate Poetry only if its configuration file is found."
+  (let ((root-path (locate-dominating-file default-directory "pyproject.toml")))
+    (when root-path
+      (message "Poetry configuration file found. Activating virtual environment.")
+      (poetry-venv-workon))
+    ))
 
 
 ;; others
@@ -150,36 +233,6 @@ as the pyenv version then also return nil. This works around https://github.com/
           executable))
     (executable-find command)))
 
-(defun spacemacs//python-setup-shell (&rest args)
-  (if (spacemacs/pyenv-executable-find "ipython")
-      (progn
-        (setq python-shell-interpreter "ipython")
-        (let ((version (replace-regexp-in-string "\\(\\.dev\\)?[\r\n|\n]$" ""
-                                                 (shell-command-to-string
-                                                  (format "\"%s\" --version"
-                                                          (string-trim (spacemacs/pyenv-executable-find "ipython")))))))
-          (if (or (version< version "5")
-                  (string-blank-p version))
-              (setq python-shell-interpreter-args "-i")
-            (setq python-shell-interpreter-args "--simple-prompt -i"))))
-    (progn
-      (setq python-shell-interpreter-args "-i"
-            python-shell-interpreter "python"))))
-
-
-(defun spacemacs//python-setup-checkers (&rest args)
-  (when (fboundp 'flycheck-set-checker-executable)
-    (let ((pylint (spacemacs/pyenv-executable-find "pylint"))
-          (flake8 (spacemacs/pyenv-executable-find "flake8")))
-      (when pylint
-        (flycheck-set-checker-executable "python-pylint" pylint))
-      (when flake8
-        (flycheck-set-checker-executable "python-flake8" flake8)))))
-
-(defun spacemacs/python-setup-everything (&rest args)
-  (apply 'spacemacs//python-setup-shell args)
-  (apply 'spacemacs//python-setup-checkers args))
-
 (defun spacemacs/python-toggle-breakpoint ()
   "Add a break point, highlight it."
   (interactive)
@@ -216,51 +269,6 @@ as the pyenv version then also return nil. This works around https://github.com/
         (revert-buffer t t t))
     (message "Error: Cannot find autoflake executable.")))
 
-(defun spacemacs//pyenv-mode-set-local-version ()
-  "Set pyenv version from \".python-version\" by looking in parent directories."
-  (interactive)
-  (let ((root-path (locate-dominating-file default-directory
-                                           ".python-version")))
-    (when root-path
-      (let* ((file-path (expand-file-name ".python-version" root-path))
-             (version
-              (with-temp-buffer
-                (insert-file-contents-literally file-path)
-                (nth 0 (split-string (buffer-substring-no-properties
-                                      (line-beginning-position)
-                                      (line-end-position)))))))
-        (if (member version (pyenv-mode-versions))
-            (progn
-              (setenv "VIRTUAL_ENV" version)
-              (pyenv-mode-set version))
-          (message "pyenv: version `%s' is not installed (set by %s)"
-                   version file-path))))))
-
-(defun spacemacs//pyvenv-mode-set-local-virtualenv ()
-  "Set pyvenv virtualenv from \".venv\" by looking in parent directories.
-Handle \".venv\" being a virtualenv directory or a file specifying either
-absolute or relative virtualenv path. Relative path is checked relative to
-location of \".venv\" file, then relative to pyvenv-workon-home()."
-  (interactive)
-  (let ((root-path (locate-dominating-file default-directory ".venv")))
-    (when root-path
-      (let ((file-path (expand-file-name ".venv" root-path)))
-        (cond ((file-directory-p file-path)
-               (pyvenv-activate file-path) (setq-local pyvenv-activate file-path))
-              (t (let* ((virtualenv-path-in-file
-                         (with-temp-buffer
-                           (insert-file-contents-literally file-path)
-                           (buffer-substring-no-properties (line-beginning-position)
-                                                           (line-end-position))))
-                        (virtualenv-abs-path
-                         (if (file-name-absolute-p virtualenv-path-in-file)
-                             virtualenv-path-in-file
-                           (format "%s/%s" root-path virtualenv-path-in-file))))
-                   (cond ((file-directory-p virtualenv-abs-path)
-                          (pyvenv-activate virtualenv-abs-path)
-                          (setq-local pyvenv-activate virtualenv-abs-path))
-                         (t (pyvenv-workon virtualenv-path-in-file)
-                            (setq-local pyvenv-workon virtualenv-path-in-file))))))))))
 
 ;; Tests
 
@@ -463,6 +471,13 @@ Bind formatter to '==' for LSP and '='for all other backends."
         (start (point-at-bol))
         (end (point-at-eol)))
     (python-shell-send-region start end)))
+
+(defun spacemacs/python-shell-send-line-switch ()
+	"Send the current line to shell and switch to it in insert mode."
+  (interactive)
+  (call-interactively #'spacemacs/python-shell-send-line)
+  (python-shell-switch-to-shell)
+  (evil-insert-state))
 
 (defun spacemacs/python-shell-send-statement ()
   "Send the current statement to shell, same as `python-shell-send-statement' in Emacs27."
