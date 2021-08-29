@@ -185,9 +185,12 @@ brew link emacs-plus
 
 ##### Using emacs-mac
 
+[Railwaycat's Emacs version](railwaycat) might be the best choice for MacOS
+users. It supports gestures, it feels faster and has less graphical glitches.
+
 ```shell
 brew tap railwaycat/emacsmacport
-brew install emacs-mac
+brew install --cask emacs-mac-spacemacs-icon
 brew link emacs-mac
 ```
 
@@ -568,6 +571,7 @@ Thank you!
 [Homebrew]: https://brew.sh
 [emacs-plus]: https://github.com/d12frosted/homebrew-emacs-plus
 [powerline documentation]: https://develop.spacemacs.org/doc/DOCUMENTATION.html#powerline-separators
+[railwaycat]: https://github.com/railwaycat/homebrew-emacsmacport
 [emacs-for-windows]: https://ftp.gnu.org/gnu/emacs/windows/
 [gzip-for-windows]: http://gnuwin32.sourceforge.net/packages/gzip.htm
 [ripgrep]: https://github.com/BurntSushi/ripgrep
