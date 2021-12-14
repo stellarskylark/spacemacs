@@ -47,6 +47,7 @@
 (defun spacemacs//python-setup-version-manager ()
   "Conditionally setup the environment manager."
   (pcase python-version-manager
+    ('conda (spacemacs//python-setup-conda))
     ('pyenv-pyvenv (spacemacs//python-setup-pyenv-pyvenv))
     ('pipenv (spacemacs//python-setup-pipenv))
     ('poetry (spacemacs//python-setup-poetry))))
@@ -99,12 +100,27 @@
   (require 'dap-python))
 
 
+;; conda
+
+(defun spacemacs//python-setup-conda-hook ()
+  "Function called to setup `conda-env-autoactivate-mode' when it's enabled."
+  (conda-env-initialize-interactive-shells)
+  (conda-env-initialize-eshell))
+
+(defun spacemacs//python-setup-conda ()
+  "Setup conda version manager."
+  (message "-------------> conda")
+  (require 'conda)
+  (conda-env-autoactivate-mode t))
+
+
 ;; pyenv and pyvenv
 
 (defun spacemacs//python-setup-pyenv-pyvenv ()
   "Setup pyenv and pyvenv version manager."
-    (pyenv-mode)
-    (pyvenv-mode))
+  (message "-------------> pyvenv")
+  (pyenv-mode)
+  (pyvenv-mode))
 
 (defun spacemacs//python-setup-pyenv-hook ()
   "Function called to setup `pyenv-mode' when it's enabled."
@@ -173,6 +189,7 @@ location of \".venv\" file, then relative to pyvenv-workon-home()."
 
 (defun spacemacs//python-setup-poetry ()
   "Setup poetry version manager."
+  (message "-------------> poetry")
   (spacemacs//poetry-activate)
   )
 

@@ -26,6 +26,7 @@
     blacken
     code-cells
     company
+    conda
     counsel-gtags
     cython-mode
     dap-mode
@@ -123,6 +124,24 @@
     (spacemacs|add-company-backends
       :backends company-capf
       :modes pip-requirements-mode)))
+
+(defun python/init-conda ()
+  (use-package conda
+    :defer t
+    :init
+    (progn
+      (add-hook 'conda-env-autoactivate-mode-hook 'spacemacs//python-setup-conda-hook)
+      (spacemacs/add-local-var-hook #'spacemacs//python-setup-version-manager
+                                      :project-type 'python)
+      (spacemacs|spacebind
+       :project-minor
+       (conda-env-autoactivate-mode
+        "Conda key bindings"
+        ("V" "Environment"
+         ("a" conda-env-activate "Activate conda env...")
+         ("b" conda-env-activate-for-buffer "Activate coda env for current buffer")
+         ("d" conda-env-deactivate "Deactivate conda env")
+         ("l" conda-env-list "List all conda environments")))))))
 
 (defun python/init-company-anaconda ()
   (use-package company-anaconda
@@ -314,8 +333,6 @@
         "hp" 'pydoc-at-point-no-jedi
         "hP" 'pydoc))))
 
-(defun python/pre-init-pyenv-mode ()
-  (add-to-list 'spacemacs--python-pyenv-modes 'python-mode))
 (defun python/init-pyenv-mode ()
   (use-package pyenv-mode
     :defer t

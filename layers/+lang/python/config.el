@@ -39,7 +39,7 @@ and `mspyls'")
 
 (defvar python-version-manager 'pyenv-pyvenv
   "Version manager to use to select Python version and virtual environments.
-Possible values are `pyenv-pyvenv', `pipenv' and `poetry'.")
+Possible values are `pyenv-pyvenv', `pipenv', `poetry' and `conda'.")
 (put 'python-version-manager 'safe-local-variable #'symbolp)
 
 (defvar python-lsp-git-root nil

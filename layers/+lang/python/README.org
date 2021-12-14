@@ -30,7 +30,6 @@
   - [[#fill-column][Fill column]]
   - [[#sort-imports][Sort imports]]
   - [[#importmagic][Importmagic]]
-  - [[#pyvenv-pyenv-pipenv-and-poetry][Pyvenv, pyenv, pipenv and poetry]]
 - [[#management-of-python-versions-and-virtual-environments][Management of Python versions and virtual environments]]
   - [[#manage-virtual-environments-with-pyvenv][Manage virtual environments with pyvenv]]
     - [[#automatic-activation-of-local-virtual-environment][Automatic activation of local virtual environment]]
@@ -345,21 +344,6 @@ Install importmagic and epc for importmagic functionality.
 #+BEGIN_SRC sh
   pip install importmagic epc
 #+END_SRC
-
-** Pyvenv, pyenv, pipenv and poetry
-Sometimes, it is convenient to be able to use python virtual environments from
-other modes. For this reason, the python layer provides the variables
-=spacemacs--python-pyenv-modes=, =spacemacs--python-pyvenv-modes=,
-=spacemacs--python-poetry-modes= and =spacemacs--python-pipenv-modes=.
-If you wish to be able to access these functionalities from other modes,
-in your user config section, do:
-
-#+BEGIN_SRC elisp
-  (add-to-list 'spacemacs--python-pipenv-mode 'your-mode)
-#+END_SRC
-
-This will allow you to use [[https://github.com/pwalsh/pipenv.el][pipenv]] bindings from the mode =your-mode=.
-You can add to the other two lists analogously.
 
 * Management of Python versions and virtual environments
 ** Manage virtual environments with pyvenv
